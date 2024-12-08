@@ -1,0 +1,45 @@
+name: Deploy Express.js App to EC2
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 푸시할 때마다 워크플로 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. 코드 체크아웃
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # 2. Node.js 환경 설정
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'  # 사용할 Node.js 버전 설정
+
+    # 3. 필요한 패키지 설치
+    - name: Install dependencies
+      run: npm install
+
+    # 4. 애플리케이션 빌드 (optional)
+    # 만약 애플리케이션을 빌드하는 과정이 필요하면 이 단계 추가
+    # - name: Build application
+    #   run: npm run build
+
+    # 5. EC2 인스턴스에 SSH로 연결하여 애플리케이션 배포
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}  # EC2 인스턴스의 퍼블릭 IP
+        username: ${{ secrets.ec2_user }}  # EC2 인스턴스의 사용자 이름 (보통 ec2-user 또는 ubuntu)
+        key: ${{ secrets.EC2_SSH_KEY }}  # EC2 인스턴스의 SSH 비공개 키 (GitHub Secrets에 저장된 값)
+        port: 22  # EC2 인스턴스의 SSH 포트 (기본적으로 22)
+        script: |
+          cd /path/to/your/app  # 애플리케이션 디렉토리로 이동
+          git pull origin main  # 최신 코드 받기
+          npm install  # 의존성 다시 설치
+          pm2 restart app.js  # 애플리케이션 재시작 (pm2를 사용하여 백그라운드에서 실행한다고 가정)
+
